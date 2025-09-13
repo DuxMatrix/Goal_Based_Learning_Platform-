@@ -29,7 +29,7 @@ const server = createServer(app);
 // Allowed origins for CORS
 const allowedOrigins = [
   'http://localhost:3000', // local dev
-  'https://goal-based-learning-platform-f1.onrender.com' // deployed frontend
+  process.env.CLIENT_URL   // deployed frontend
 ];
 
 // Socket.io setup with CORS
@@ -47,8 +47,8 @@ app.use(compression());
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
@@ -56,8 +56,8 @@ app.use('/api/', limiter);
 // CORS configuration for Express
 app.use(cors({
   origin: function(origin, callback){
-    if(!origin) return callback(null, true); // allow Postman / server requests
-    if(allowedOrigins.indexOf(origin) === -1){
+    if(!origin) return callback(null, true); // allow server-to-server or Postman requests
+    if(!allowedOrigins.includes(origin)){
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
@@ -91,7 +91,6 @@ io.on('connection', (socket) => {
   });
   
   socket.on('tutor-message', async (data) => {
-    // Handle AI tutor messages
     socket.to(`tutor-${data.userId}`).emit('tutor-response', {
       message: 'AI response would go here',
       timestamp: new Date()
